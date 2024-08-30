@@ -1,0 +1,38 @@
+---
+- name: Download Jenkins repository file
+  ansible.builtin.get_url:
+    url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    dest: /etc/yum.repos.d/jenkins.repo
+    owner: root
+    mode: '0644'
+
+- name: Download Jenkins GPG key
+  shell: rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+
+- name: Enable tcp
+  firewalld:
+    port: 8080/tcp
+    permanent: yes
+    state: enabled
+
+- name: Istalling Jenkins and Dependencies
+  ansible.builtin.yum:
+    name:
+      - fontconfig 
+      - java-17-openjdk
+      - jenkins
+    state: present
+
+- name: Start service jenkins, if not started
+  service:
+    name: jenkins
+    state: started
+
+- name: cat secret file
+  ansible.builtin.shell: cat /var/lib/jenkins/secrets/initialAdminPassword
+  register: initial_passwd
+
+- name: Debug jenkin initial password
+  debug:
+    var: initial_passwd.stdout

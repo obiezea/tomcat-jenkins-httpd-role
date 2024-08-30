@@ -1,0 +1,88 @@
+---
+- name: install packages
+  yum:
+    name: 
+      - java
+      - wget
+    state: present
+
+- name: create tomcat directory
+  file:
+    name: "{{ tomcat_home }}"
+    state: directory
+
+- name: Add the user tomcat
+  ansible.builtin.user:
+    name: tomcat
+    shell: /bin/nologin
+
+- name: Download Tomcat 8
+  get_url:
+    url: "{{ tomcat_source }}" 
+    dest: /opt
+
+- name: Extract Apache Tomcat to /opt/tomcat
+  ansible.builtin.unarchive:
+    src: "/opt/{{ tomcat_package }}"
+    dest: /opt/tomcat
+    remote_src: yes
+    extra_opts:
+      - --strip-components=1
+
+- name: enable 8080
+  firewalld:
+    zone: public
+    port: 8080/tcp
+    permanent: true
+    immediate: yes
+    state: enabled
+
+- name: Change file ownership, group and permissions
+  file:
+    path: "{{ tomcat_home }}"
+    owner: tomcat
+    group: tomcat
+    mode: '0755'
+    recurse: yes
+
+- name: Systemd config
+  copy:
+    src: files/tomcat.service
+    dest: /etc/systemd/system
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: copy manger context
+  copy:
+    src: files/manager-context.xml
+    dest: /opt/tomcat/webapps/manager/META-INF/context.xml
+    owner: tomcat
+    group: tomcat
+    mode: '0755'
+
+- name: tomcat-user xml file
+  copy:
+    src: files/tomcat-users.xml
+    dest: /opt/tomcat/conf/tomcat-users.xml
+    owner: tomcat
+    group: tomcat
+    mode: '0755'
+
+- name: copy host-manger context
+  copy:
+    src: files/host-context.xml
+    dest: /opt/tomcat/webapps/host-manager/META-INF/context.xml
+    owner: tomcat
+    group: tomcat
+    mode: '0755'
+
+
+- name: reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Start service Tomcat8
+  ansible.builtin.service:
+    name: tomcat
+    state: started
