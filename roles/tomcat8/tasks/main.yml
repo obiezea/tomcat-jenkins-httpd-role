@@ -16,9 +16,9 @@
     name: tomcat
     shell: /bin/nologin
 
-- name: Download Tomcat 8
-  get_url:
-    url: "{{ tomcat_source }}" 
+- name: copy Tomcat 8 package
+  ansible.builtin.copy:
+    src: "files/{{ tomcat_package }}"
     dest: /opt
 
 - name: Extract Apache Tomcat to /opt/tomcat
